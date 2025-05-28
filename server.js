@@ -8,6 +8,7 @@ const playersRoutes = require('./routes/players');
 const auctionsRoutes = require('./routes/auctions');
 const teamRoutes = require('./routes/team');
 const groupRoutes = require('./routes/groups');
+const playoffsRoutes = require('./routes/playoffs');
 const { connectToDatabase } = require("./dbConnection");
 
 const app = express();
@@ -30,6 +31,7 @@ connectToDatabase()
     app.use('/auctions', auctionsRoutes);
     app.use('/teams', teamRoutes);
     app.use('/groups', groupRoutes);
+    app.use('/playoffs', playoffsRoutes);
 
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);

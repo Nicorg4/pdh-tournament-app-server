@@ -1,18 +1,35 @@
   const { connection } = require('../dbConnection');
 
-  const getAuctions = (req, res) => {
-    const query = "SELECT auctions.id AS id, players.id AS player_id, players.name AS player_name, auctions.price, teams.id AS team_id, teams.name AS team_name, teams.logo AS team_logo, teams.owner_id FROM auctions JOIN players ON auctions.player_id = players.id JOIN teams ON players.team_id = teams.id WHERE auctions.state = 'pending';";
-  
-    connection.query(query, (error, results) => {
-            if (error) {
-                console.error("Error while obtaining auctions", error);
-                res.status(500).json({ error: "Error while obtaining auctions" });
-            } else {
-                res.status(200).json(results);
-            }
-    });
-  };
+const getAuctions = (req, res) => {
+  const query = "SELECT auctions.id AS id, players.id AS player_id, players.name AS player_name, auctions.price, teams.id AS team_id, teams.name AS team_name, teams.logo AS team_logo, teams.owner_id FROM auctions JOIN players ON auctions.player_id = players.id JOIN teams ON players.team_id = teams.id WHERE auctions.state = 'pending';";
 
+  connection.query(query, (error, results) => {
+          if (error) {
+              console.error("Error while obtaining auctions", error);
+              res.status(500).json({ error: "Error while obtaining auctions" });
+          } else {
+              const auctions = results.map(row => ({
+                  id: row.id,
+                  player: {
+                      id: row.player_id,
+                      name: row.player_name,
+                      team: {
+                          id: row.team_id,
+                          name: row.team_name,
+                          logo: row.team_logo
+                      },
+                      price: row.price
+                  },
+                  team: {
+                      id: row.team_id,
+                      name: row.team_name,
+                      logo: row.team_logo
+                  }
+              }));
+              res.status(200).json(auctions);
+          }
+  });
+};
   const getFinishedAuctions = (req, res) => {
     const query = `
         SELECT 
@@ -31,7 +48,8 @@
         JOIN players ON auctions.player_id = players.id
         LEFT JOIN teams AS from_team ON auctions.from_team = from_team.id
         LEFT JOIN teams AS to_team ON auctions.to_team = to_team.id
-        WHERE auctions.state = 'finished';
+        WHERE auctions.state = 'finished'
+        ORDER BY auctions.id DESC;
     `;
     
     connection.query(query, (error, results) => {

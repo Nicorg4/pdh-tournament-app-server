@@ -49,18 +49,32 @@ const getPlayersNotOnSaleByTeamId = (req, res) => {
 
 const createPlayer = (req, res) => {
     const { playername, position, team_id, number } = req.body
-    const query = "INSERT INTO players (name, position, team_id, number) VALUES (?, ?, ?, ?)"
-    const values = [playername, position, team_id, number]
-    connection.query(query, values, (error, results) => {
-        if(error) {
-            console.error("Error while creating player", error)
-            res.status(500).json({ error: 'Error while creating player' });
-        }else{
-            res.status(200).json({ message: 'Player created successfully' });
+    const checkQuery = "SELECT * FROM players WHERE name = ?"
+    
+    connection.query(checkQuery, [playername], (error, results) => {
+        if (error) {
+            console.error("Error while checking player name", error)
+            res.status(500).json({ error: 'Error while checking player name' });
+            return;
         }
-    })
-} 
+        
+        if (results.length > 0) {
+            res.status(400).json({ error: 'Player name already exists' });
+            return;
+        }
 
+        const query = "INSERT INTO players (name, position, team_id, number) VALUES (?, ?, ?, ?)"
+        const values = [playername, position, team_id, number]
+        connection.query(query, values, (error, results) => {
+            if(error) {
+                console.error("Error while creating player", error)
+                res.status(500).json({ error: 'Error while creating player' });
+            }else{
+                res.status(200).json({ message: 'Player created successfully' });
+            }
+        })
+    })
+}
 module.exports = {
     getPlayersByTeamId,
     getPlayersOnSaleByTeamId,

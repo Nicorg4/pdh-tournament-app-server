@@ -83,17 +83,27 @@ const createUser = (req, res) => {
   const { username, password, role } = req.body;
   const picture = req.file ? `images/${req.file.filename}` : null;
 
-  const query = 'INSERT INTO users (username, password, picture, role, money) VALUES (?, ?, ?, ?, ?)';
-  
-  connection.query(query, [username, password, picture, role, 100000000], (error, results) => {
-    if (error) {
-      console.error('Error al crear usuario:', error);
-      return res.status(500).json({ error: 'Error al crear usuario' });
+  const checkQuery = 'SELECT * FROM users WHERE username = ?';
+  connection.query(checkQuery, [username], (checkError, checkResults) => {
+    if (checkError) {
+      console.error('Error al verificar usuario:', checkError);
+      return res.status(500).json({ error: 'Error al verificar usuario' });
     }
-    res.status(201).json({ message: 'Usuario creado con éxito', picture });
+
+    if (checkResults.length > 0) {
+      return res.status(400).json({ error: 'El nombre de usuario ya existe' });
+    }
+
+    const query = 'INSERT INTO users (username, password, picture, role, money) VALUES (?, ?, ?, ?, ?)';
+    connection.query(query, [username, password, picture, role, 100000000], (error, results) => {
+      if (error) {
+        console.error('Error al crear usuario:', error);
+        return res.status(500).json({ error: 'Error al crear usuario' });
+      }
+      res.status(201).json({ message: 'Usuario creado con éxito', picture });
+    });
   });
 };
-
 const deleteUser = (req, res) => {
   const { id } = req.params;
   const query = 'DELETE FROM users WHERE id = ?';
