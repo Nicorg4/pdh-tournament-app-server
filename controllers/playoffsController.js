@@ -20,7 +20,7 @@ const createPlayoffs = async (req, res) => {
     }
 
     const totalGroups = groupsQuery[0].length;
-    const totalTeams = totalGroups * 2;
+    const totalTeams = totalGroups * 4;
     const phase = Math.log2(totalTeams);
 
     const playoffMatches = [];
@@ -73,7 +73,6 @@ const createPlayoffs = async (req, res) => {
       ]);
     }
 
-    console.log('Playoffs (cuartos de final, semifinal o fase final) created successfully.');
     res.status(200).json({ message: 'Playoffs created successfully.' });
   } catch (error) {
     console.error('Error creating playoffs:', error);
@@ -120,7 +119,158 @@ try {
 }
 };
 
+const updateMatches = (req, res) => {
+  const matches = req.body.matches;
+
+  if (!Array.isArray(matches)) {
+    return res.status(400).json({ error: 'Invalid matches format' });
+  }
+
+  const updatePromises = matches.map(match => {
+    const { match_id, team_A_score, team_B_score, team_A_penalty_score, team_B_penalty_score, winner_team_id } = match;
+    return connection.promise().query(`
+      UPDATE playoffs 
+      SET team_A_score = ?, team_B_score = ?, 
+          team_A_penalty_score = ?, team_B_penalty_score = ?, 
+          winner_team_id = ? 
+      WHERE id = ?
+    `, [team_A_score, team_B_score, team_A_penalty_score, team_B_penalty_score, winner_team_id, match_id]);
+  });
+
+  Promise.all(updatePromises)
+    .then(() => res.status(200).json({ message: 'Matches updated successfully.' }))
+    .catch(error => {
+      console.error('Error updating matches:', error);
+      res.status(500).json({ message: 'Error updating matches.' });
+  });
+}
+
+const checkIfAllQuartersPlayed = async (req, res) => {
+    try {
+      const resultPlayed = await connection.promise().query(
+        'SELECT COUNT(*) AS playedCount FROM playoffs WHERE winner_team_id IS NOT NULL AND phase = 4'
+      );
+  
+      const resultTotal = await connection.promise().query(
+        'SELECT COUNT(*) AS totalCount FROM playoffs wHERE phase = 4'
+      );
+
+      const resultado1 = resultPlayed[0][0]?.playedCount;
+      const resultado2 = resultTotal[0][0]?.totalCount;
+  
+      const allMatchesPlayedStatus = resultado1 === resultado2;
+  
+      res.json({
+        allMatchesPlayed: allMatchesPlayedStatus
+      });
+    } catch (error) {
+      console.error("Error checking if all matches played:", error);
+      res.status(500).json({ message: 'Error checking if all matches played.' });
+    }
+  };
+
+const checkIfAllSemifinalsPlayed = async (req, res) => {
+    try {
+      const resultPlayed = await connection.promise().query(
+        'SELECT COUNT(*) AS playedCount FROM playoffs WHERE winner_team_id IS NOT NULL AND phase = 2'
+      );
+  
+      const resultTotal = await connection.promise().query(
+        'SELECT COUNT(*) AS totalCount FROM playoffs WHERE phase = 2'
+      );
+
+      const resultado1 = resultPlayed[0][0]?.playedCount;
+      const resultado2 = resultTotal[0][0]?.totalCount;
+
+      const allMatchesPlayedStatus = resultado1 === resultado2;
+  
+      res.json({
+        allMatchesPlayed: allMatchesPlayedStatus
+      });
+    } catch (error) {
+      console.error("Error checking if all matches played:", error);
+      res.status(500).json({ message: 'Error checking if all matches played.' });
+    }
+  };
+
+  const createSemifinals = async (req, res) => {
+    try {
+
+      await connection.promise().query(
+        `DELETE FROM playoffs WHERE phase = 2`
+      );
+
+      const [winners] = await connection.promise().query(
+        `SELECT winner_team_id FROM playoffs WHERE phase = 4 ORDER BY id ASC LIMIT 4`
+      );
+
+      if (winners.length !== 4) {
+        return res.status(400).json({ message: 'No hay 4 ganadores para crear semifinales.' });
+      }
+
+      const semifinalMatches = [
+        {
+          team_A_id: winners[0].winner_team_id,
+          team_B_id: winners[1].winner_team_id,
+          phase: 2
+        },
+        {
+          team_A_id: winners[2].winner_team_id,
+          team_B_id: winners[3].winner_team_id,
+          phase: 2
+        }
+      ];
+
+      for (const match of semifinalMatches) {
+        await connection.promise().query(
+          `INSERT INTO playoffs (team_A_id, team_B_id, team_A_score, team_B_score, team_A_penalty_score, team_B_penalty_score, winner_team_id, phase)
+           VALUES (?, ?, NULL, NULL, NULL, NULL, NULL, ?)`,
+          [match.team_A_id, match.team_B_id, match.phase]
+        );
+      }
+
+      res.status(200).json({ message: 'Semifinales creadas correctamente.' });
+    } catch (error) {
+      console.error('Error creando semifinales:', error);
+      res.status(500).json({ message: 'Error creando semifinales.' });
+    }
+  };
+
+  const createFinal = async (req, res) => {
+    try {
+
+      await connection.promise().query(
+        `DELETE FROM playoffs WHERE phase = 1`
+      );
+      // Obtener los ganadores de las semifinales (fase 2)
+      const [winners] = await connection.promise().query(
+        `SELECT winner_team_id FROM playoffs WHERE phase = 2 ORDER BY id ASC LIMIT 2`
+      );
+
+      if (winners.length !== 2) {
+        return res.status(400).json({ message: 'No hay 2 ganadores para crear la final.' });
+      }
+
+      // Crear el partido de la final (fase 1)
+      await connection.promise().query(
+        `INSERT INTO playoffs (team_A_id, team_B_id, team_A_score, team_B_score, team_A_penalty_score, team_B_penalty_score, winner_team_id, phase)
+         VALUES (?, ?, NULL, NULL, NULL, NULL, NULL, 1)`,
+        [winners[0].winner_team_id, winners[1].winner_team_id]
+      );
+
+      res.status(200).json({ message: 'Final creada correctamente.' });
+    } catch (error) {
+      console.error('Error creando la final:', error);
+      res.status(500).json({ message: 'Error creando la final.' });
+    }
+  }
+
 module.exports = {
   createPlayoffs,
-  getPlayoffs
+  getPlayoffs,
+  updateMatches,
+  checkIfAllQuartersPlayed,
+  checkIfAllSemifinalsPlayed,
+  createSemifinals,
+  createFinal
 };
