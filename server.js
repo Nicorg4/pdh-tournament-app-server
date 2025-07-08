@@ -14,6 +14,22 @@ const { connectToDatabase } = require("./dbConnection");
 const app = express();
 const PORT = process.env.PORT || 3003;
 
+const allowedOrigins = [
+  'http://localhost:3002',
+  'https://pdh-tournament-app.vercel.app'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('No permitido por CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use("/images", express.static(path.join(__dirname, "images")));
