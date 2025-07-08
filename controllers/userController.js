@@ -49,8 +49,9 @@ const loginUser = (req, res) => {
         res.status(401).json({ error: 'Wrong username or password' });
       } else {
         const user = results[0];
+        const isPasswordValid = bcrypt.compareSync(password, user.password);
 
-        if (password.trim() === user.password) {
+        if (isPasswordValid) {
           const teamQuery = 'SELECT * FROM teams WHERE owner_id = ?';
           connection.query(teamQuery, [user.id], (teamError, teamResults) => {
             if (teamError) {
@@ -66,7 +67,9 @@ const loginUser = (req, res) => {
                 picture: user.picture,
               };
 
-              const token = jwt.sign(tokenPayload, 'token_secret', { expiresIn: '6h' });
+              const SECRET_KEY = process.env.JWT_SECRET
+
+              const token = jwt.sign(tokenPayload, SECRET_KEY, { expiresIn: '6h' });
 
               res.json({ token });
             }
@@ -94,8 +97,10 @@ const createUser = (req, res) => {
       return res.status(400).json({ error: 'El nombre de usuario ya existe' });
     }
 
+    const hashedPassword = bcrypt.hashSync(password, 10);
+
     const query = 'INSERT INTO users (username, password, picture, role, money) VALUES (?, ?, ?, ?, ?)';
-    connection.query(query, [username, password, picture, role, 100000000], (error, results) => {
+    connection.query(query, [username, hashedPassword, picture, role, 100000000], (error, results) => {
       if (error) {
         console.error('Error al crear usuario:', error);
         return res.status(500).json({ error: 'Error al crear usuario' });

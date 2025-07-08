@@ -10,6 +10,8 @@ const createGroups = async (req, res) => {
 
     try {
         await connection.promise().query('TRUNCATE TABLE group_player');
+        await connection.promise().query('TRUNCATE TABLE playoffs');
+        await connection.promise().query('TRUNCATE TABLE matches');
         await connection.promise().beginTransaction();
 
         const insertGroupQuery = `
@@ -73,7 +75,7 @@ const getAllGroups = (req, res) => {
         results.forEach(row => {
             if (!groups[row.group_id]) {
                 groups[row.group_id] = {
-                    group_id: row.group_id, 
+                    group_id: row.group_id,
                     teams: []
                 };
             }
@@ -197,7 +199,7 @@ const getAllMatches = async (req, res) => {
         res.status(200).json({ matches: results });
     } catch (error) {
         console.error("Error fetching matches", error);
-        res.status(500).json({ error: "Error fetching matches" }); 
+        res.status(500).json({ error: "Error fetching matches" });
     }
 };
 
@@ -282,28 +284,28 @@ const updateMatches = async (req, res) => {
 
 const checkIfAllMatchesPlayed = async (req, res) => {
     try {
-      const resultPlayed = await connection.promise().query(
-        'SELECT COUNT(*) AS playedCount FROM matches WHERE winner_team_id IS NOT NULL OR isDraw = 1'
-      );
-  
-      const resultTotal = await connection.promise().query(
-        'SELECT COUNT(*) AS totalCount FROM matches'
-      );
-  
-      const resultado1 = resultPlayed[0][0]?.playedCount;
-      const resultado2 = resultTotal[0][0]?.totalCount;
-  
-      const allMatchesPlayedStatus = resultado1 === resultado2;
-  
-      res.json({
-        allMatchesPlayed: allMatchesPlayedStatus
-      });
-    } catch (error) {
-      console.error("Error checking if all matches played:", error);
-      res.status(500).json({ message: 'Error checking if all matches played.' });
-    }
-  };
+        const resultPlayed = await connection.promise().query(
+            'SELECT COUNT(*) AS playedCount FROM matches WHERE winner_team_id IS NOT NULL OR isDraw = 1'
+        );
 
-  
+        const resultTotal = await connection.promise().query(
+            'SELECT COUNT(*) AS totalCount FROM matches'
+        );
+
+        const resultado1 = resultPlayed[0][0]?.playedCount;
+        const resultado2 = resultTotal[0][0]?.totalCount;
+
+        const allMatchesPlayedStatus = resultado1 === resultado2;
+
+        res.json({
+            allMatchesPlayed: allMatchesPlayedStatus
+        });
+    } catch (error) {
+        console.error("Error checking if all matches played:", error);
+        res.status(500).json({ message: 'Error checking if all matches played.' });
+    }
+};
+
+
 
 module.exports = { createGroups, getAllGroups, createGroupMatches, getAllMatches, updateMatches, checkIfAllMatchesPlayed };
