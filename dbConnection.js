@@ -17,7 +17,6 @@ const connectToDatabase = () => {
         console.error('Error al conectar a la base de datos:', err);
         reject(err);
       } else {
-        console.log('Conexión exitosa a la base de datos MySQL');
         resolve('Conexión exitosa a la base de datos MySQL');
       }
     });

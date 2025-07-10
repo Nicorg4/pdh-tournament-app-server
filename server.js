@@ -39,7 +39,7 @@ connectToDatabase()
     console.log(message);
 
     app.get('/', (req, res) => {
-      res.send('Bienvenido a mi servidor');
+      res.send('PDH Tournament API online');
     });
 
     app.use('/users', usersRoutes);

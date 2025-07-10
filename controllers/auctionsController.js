@@ -180,7 +180,6 @@ const purchasePlayer = (req, res) => {
         });
       }
 
-
       const auction = results[0];
       if (!auction) {
         return connection.rollback(() => {
@@ -203,60 +202,60 @@ const purchasePlayer = (req, res) => {
             res.status(500).json({ error: "Error while checking user has enough money" });
           });
         }
-      });
 
-      const userHasEnoughMoney = results[0].length > 0;
-      if (!userHasEnoughMoney) {
-        return connection.rollback(() => {
-          res.status(400).json({ error: "User does not have enough money" });
-        });
-      }
-
-      const updateAuctionValues = [toTeamId, auctionId];
-      connection.query(updateAuctionQuery, updateAuctionValues, (error, results) => {
-        if (error) {
+        const userHasEnoughMoney = results.length > 0;
+        if (!userHasEnoughMoney) {
           return connection.rollback(() => {
-            console.error("Error while updating auction", error);
-            res.status(500).json({ error: "Error while updating auction" });
+            res.status(400).json({ error: "User does not have enough money" });
           });
         }
 
-        const updatePlayerValues = [toTeamId, 0, auctionId];
-        connection.query(updatePlayerQuery, updatePlayerValues, (error, results) => {
+        const updateAuctionValues = [toTeamId, auctionId];
+        connection.query(updateAuctionQuery, updateAuctionValues, (error, results) => {
           if (error) {
             return connection.rollback(() => {
-              console.error("Error while updating player", error);
-              res.status(500).json({ error: "Error while updating player" });
+              console.error("Error while updating auction", error);
+              res.status(500).json({ error: "Error while updating auction" });
             });
           }
 
-          const updateUserMoneyValues = [auctionPrice, toTeamId];
-          connection.query(updateUserMoneyQuery, updateUserMoneyValues, (error, results) => {
+          const updatePlayerValues = [toTeamId, 0, auctionId];
+          connection.query(updatePlayerQuery, updatePlayerValues, (error, results) => {
             if (error) {
               return connection.rollback(() => {
-                console.error("Error while updating user money", error);
-                res.status(500).json({ error: "Error while updating user money" });
+                console.error("Error while updating player", error);
+                res.status(500).json({ error: "Error while updating player" });
               });
             }
 
-            const updateOtherUserMoneyValues = [auctionPrice, fromTeamId];
-            connection.query(updateOtherUserMoneyQuery, updateOtherUserMoneyValues, (error, results) => {
+            const updateUserMoneyValues = [auctionPrice, toTeamId];
+            connection.query(updateUserMoneyQuery, updateUserMoneyValues, (error, results) => {
               if (error) {
                 return connection.rollback(() => {
-                  console.error("Error while updating other user's money", error);
-                  res.status(500).json({ error: "Error while updating other user's money" });
+                  console.error("Error while updating user money", error);
+                  res.status(500).json({ error: "Error while updating user money" });
                 });
               }
 
-              connection.commit((err) => {
-                if (err) {
+              const updateOtherUserMoneyValues = [auctionPrice, fromTeamId];
+              connection.query(updateOtherUserMoneyQuery, updateOtherUserMoneyValues, (error, results) => {
+                if (error) {
                   return connection.rollback(() => {
-                    console.error("Error committing transaction", err);
-                    res.status(500).json({ error: "Error committing transaction" });
+                    console.error("Error while updating other user's money", error);
+                    res.status(500).json({ error: "Error while updating other user's money" });
                   });
                 }
 
-                res.status(200).json({ message: "Player purchased successfully" });
+                connection.commit((err) => {
+                  if (err) {
+                    return connection.rollback(() => {
+                      console.error("Error committing transaction", err);
+                      res.status(500).json({ error: "Error committing transaction" });
+                    });
+                  }
+
+                  res.status(200).json({ message: "Player purchased successfully" });
+                });
               });
             });
           });
