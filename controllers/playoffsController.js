@@ -6,7 +6,7 @@ const createPlayoffs = async (req, res) => {
     const groupsQuery = await connection.promise().query(`
       SELECT DISTINCT group_id FROM group_player
     `);
-    
+
     const allTeams = [];
 
     for (const group of groupsQuery[0]) {
@@ -27,10 +27,11 @@ const createPlayoffs = async (req, res) => {
 
     for (let i = 0; i < totalGroups; i += 2) {
       if (i + 1 < totalGroups) {
-        const firstTeamA = allTeams.find(team => team.group_id === groupsQuery[0][i].group_id && team === allTeams.find(t => t.group_id === team.group_id));
-        const secondTeamA = allTeams.find(team => team.group_id === groupsQuery[0][i].group_id && team !== firstTeamA);
-        const firstTeamB = allTeams.find(team => team.group_id === groupsQuery[0][i + 1].group_id && team === allTeams.find(t => t.group_id === team.group_id));
-        const secondTeamB = allTeams.find(team => team.group_id === groupsQuery[0][i + 1].group_id && team !== firstTeamB);
+        const groupA = groupsQuery[0][i].group_id;
+        const groupB = groupsQuery[0][i + 1].group_id;
+
+        const [firstTeamA, secondTeamA] = allTeams.filter(team => team.group_id === groupA);
+        const [firstTeamB, secondTeamB] = allTeams.filter(team => team.group_id === groupB);
 
         playoffMatches.push({
           team_A_id: firstTeamA.team_id,
@@ -42,6 +43,16 @@ const createPlayoffs = async (req, res) => {
           winner_team_id: null,
           phase: phase,
         });
+      }
+    }
+
+    for (let i = 0; i < totalGroups; i += 2) {
+      if (i + 1 < totalGroups) {
+        const groupA = groupsQuery[0][i].group_id;
+        const groupB = groupsQuery[0][i + 1].group_id;
+
+        const [firstTeamA, secondTeamA] = allTeams.filter(team => team.group_id === groupA);
+        const [firstTeamB, secondTeamB] = allTeams.filter(team => team.group_id === groupB);
 
         playoffMatches.push({
           team_A_id: firstTeamB.team_id,

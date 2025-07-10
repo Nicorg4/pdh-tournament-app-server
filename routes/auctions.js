@@ -6,7 +6,7 @@ const authorizeRole = require('../middlewares/authorizationRole');
 
 router.get('/get-all', verifyToken, authorizeRole('user'), auctionsController.getAuctions);
 router.get('/get-finished', verifyToken, authorizeRole('user'), auctionsController.getFinishedAuctions);
-router.post('/publish-player', verifyToken, authorizeRole('user'), auctionsController.publishPlayer);
+router.post('/publish-player', verifyToken, authorizeRole('user', 'admin'), auctionsController.publishPlayer);
 router.post('/unpublish-player', verifyToken, authorizeRole('user'), auctionsController.unpublishPlayer);
 router.post('/purchase-player', verifyToken, authorizeRole('user'), auctionsController.purchasePlayer);
 
