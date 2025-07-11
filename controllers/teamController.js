@@ -50,7 +50,7 @@ const assignTeam = (req, res) => {
 }
 
 const resetTeamOwnership = (req, res) => {
-    const query = 'UPDATE teams SET owner_id = NULL WHERE owner_id IS NOT NULL';
+    const query = 'UPDATE teams SET owner_id = NULL WHERE owner_id IS NOT NULL AND name != "Leyendas"';
     const dropGroupPlayerTableQuery = 'TRUNCATE TABLE group_player';
 
     connection.query(dropGroupPlayerTableQuery, (err) => {

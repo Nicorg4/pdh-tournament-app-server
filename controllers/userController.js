@@ -136,6 +136,7 @@ const getAllPairs = (req, res) => {
       FROM teams t
       JOIN users u ON t.owner_id = u.id
       WHERE t.owner_id IS NOT NULL
+      AND u.role = 'user'
   `;
 
   connection.query(query, (error, results) => {
